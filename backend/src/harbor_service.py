@@ -39,6 +39,9 @@ def approve_permit(s,id,u):
 def overlap(s,berth,start,end,exclude=None):
     for x in s.scalars(select(VesselWindow).where(VesselWindow.berth_id==berth.id,VesselWindow.state.in_(['confirmed','in_use','completed'])).execution_options(populate_existing=True)):
         if x.id!=exclude and datetime.fromisoformat(x.starts_at)<end and datetime.fromisoformat(x.ends_at)>start:raise HTTPException(409,'同泊位受油时间与已确认预约重叠')
+    from .blend_models import BlendPlan
+    for p in s.scalars(select(BlendPlan).where(BlendPlan.berth_id==berth.id,BlendPlan.state.in_(['reserved','pending_retest','released','completed'])).execution_options(populate_existing=True)):
+        if datetime.fromisoformat(p.starts_at)<end and datetime.fromisoformat(p.ends_at)>start:raise HTTPException(409,'同泊位受油时间与在持配油方案窗口重叠')
 def window_values(s,tr,p):
     berth=get(s,Berth,p.berth_id,True);start,end=stamp(p.starts_at),stamp(p.ends_at)
     if end<=start:raise HTTPException(409,'受油结束时间须晚于开始')

@@ -7,16 +7,20 @@ from .constants import GRADES
 
 def within_spec(grade,density,viscosity,sulfur):
     g=GRADES[grade];return g['density_min']<=float(density)<=g['density_max'] and g['viscosity_min']<=float(viscosity)<=g['viscosity_max'] and float(sulfur)<=g['sulfur_max']
-def compare(s,sample):
-    tank=s.get(Tank,sample.tank_id)
-    refs=s.scalars(select(FuelSample).join(Tank,FuelSample.tank_id==Tank.id).where(FuelSample.reference==True,Tank.grade==tank.grade).order_by(FuelSample.id)).all()
+def grade_model(s,grade):
+    refs=s.scalars(select(FuelSample).join(Tank,FuelSample.tank_id==Tank.id).where(FuelSample.reference==True,Tank.grade==grade).order_by(FuelSample.id)).all()
     values=np.array([[float(x.density_15)]for x in refs])
     if len(values)<20:raise ValueError('本等级合格参考样不足20条')
     scaler=StandardScaler();z=scaler.fit_transform(values)
     if float(scaler.var_[0])<1e-8:raise ValueError('参考密度没有足够变化，不能拟合核密度')
     model=KernelDensity(kernel='gaussian',bandwidth=.3).fit(z)
-    scores=model.score_samples(z);threshold=float(np.quantile(scores,.05))
-    score=float(model.score_samples(scaler.transform([[float(sample.density_15)]]))[0])
+    threshold=float(np.quantile(model.score_samples(z),.05))
+    return refs,values,scaler,model,threshold
+def score_density(scaler,model,density):return float(model.score_samples(scaler.transform([[float(density)]]))[0])
+def compare(s,sample):
+    tank=s.get(Tank,sample.tank_id)
+    refs,values,scaler,model,threshold=grade_model(s,tank.grade)
+    score=score_density(scaler,model,sample.density_15)
     passed=score>=threshold and within_spec(tank.grade,sample.density_15,sample.viscosity,sample.sulfur)
     grid=np.linspace(float(values.min()-8),float(values.max()+8),70)
     curve=np.exp(model.score_samples(scaler.transform(grid.reshape(-1,1))))/float(scaler.scale_[0])

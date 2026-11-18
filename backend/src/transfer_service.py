@@ -25,22 +25,27 @@ def eligible(s,x):
     if not within_spec(t.grade,density,x.viscosity,x.sulfur):raise HTTPException(409,'复检或原样仍超出本等级密度/黏度/硫规格')
     return t,density
 
+def available(s,t):
+    from .blend_service import reserved_liters
+    return t.liters-reserved_liters(s,t.id)
 def retest(s,x,d,u):
     if x.reference or x.status not in ['anomaly','rejected','retested']:raise HTTPException(409,'仅异常待复检或未通过样可复检')
     if s.scalar(select(Transfer.id).where(Transfer.sample_id==x.id).limit(1)):raise HTTPException(409,'油样已被调拨引用，化验快照冻结')
+    from .blend_models import BlendComponent,BlendPlan
+    if s.scalar(select(BlendComponent.id).join(BlendPlan,BlendComponent.plan_id==BlendPlan.id).where(BlendComponent.sample_id==x.id,BlendPlan.state.in_(['reserved','pending_retest','released','completed'])).limit(1)):raise HTTPException(409,'油样已被配油方案引用，化验快照冻结')
     t=get(s,Tank,x.tank_id);x.retest_density=d.density;x.retest_note=d.note
     x.status='retested'if within_spec(t.grade,d.density,x.viscosity,x.sulfur)else'rejected';audit(s,u,'sample_retested',f'{x.code}:{x.status}');return sample_view(s,x)
 def request_transfer(s,x,d,u):
     t,density=eligible(s,x)
     if t.status!='active':raise HTTPException(409,'储罐处于暂停调拨状态')
-    if d.liters>t.liters:raise HTTPException(409,'申请调拨量超过罐内可用量，未扣减')
+    if d.liters>available(s,t):raise HTTPException(409,'申请调拨量超过罐内可用量（已扣除配油预留），未扣减')
     tr=Transfer(**d.model_dump(),status='requested',grade_snapshot=t.grade,density_snapshot=density,viscosity_snapshot=x.viscosity,sulfur_snapshot=x.sulfur,released_by='');s.add(tr);s.flush();audit(s,u,'transfer_requested',tr.code);return transfer_view(s,tr)
 def release(s,tr,u):
     if tr.status!='requested':raise HTTPException(409,'调拨单已放行，不能重复扣减')
     x=get(s,FuelSample,tr.sample_id);t=get(s,Tank,x.tank_id,True)
     if t.status!='active':raise HTTPException(409,'储罐暂停中，不能放行')
     if not within_spec(tr.grade_snapshot,tr.density_snapshot,tr.viscosity_snapshot,tr.sulfur_snapshot):raise HTTPException(409,'调拨化验快照不满足等级规格')
-    if tr.liters>t.liters:raise HTTPException(409,'罐内可用量不足，调拨未扣减')
+    if tr.liters>available(s,t):raise HTTPException(409,'罐内可用量不足（已扣除配油预留），调拨未扣减')
     from .harbor_service import occupy_for_release
     occupy_for_release(s,tr,u)
     t.liters-=tr.liters;tr.status='released';tr.released_by=u['email'];audit(s,u,'transfer_released',f'{tr.code}:{tr.liters}L');s.flush();return transfer_view(s,tr)

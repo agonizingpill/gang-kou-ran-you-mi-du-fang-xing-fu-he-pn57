@@ -1,0 +1,107 @@
+=== E2E ===
+== TC1 创建配油方案，候选生成与判定依据 ==
+  PASS 化验员可创建
+  PASS 状态candidates
+  PASS 生成候选配方
+  PASS 判定依据含参考数/阈值/规格
+  PASS 判定依据含配比公式与评估计数
+  PASS 存在可直接预留配方
+  PASS TK-06+TK-08配比按可用量比例
+  PASS 混合密度加权约979.43
+  PASS 配比合计=申请量
+== TC2 权限与编号唯一 ==
+  PASS 观察员不可创建
+  PASS 单号重复被拒
+== TC3 选定配方整单预留 ==
+  PASS 选定预留成功
+  PASS 状态reserved
+  PASS 组件落账2条
+  PASS TK-06预留42857.143
+  PASS TK-08预留17142.857
+  PASS 重复选定被拒
+== TC4 普通调拨扣除预留量 ==
+  PASS 超可用(含预留)申请被拒
+  PASS 余量内申请成功
+== TC5 低似然配方待复检，不能直接放行 ==
+  PASS 生成低似然候选
+  PASS 低似然评分低于阈值
+  PASS 低似然配方可预留
+  PASS 状态pending_retest
+  PASS 低似然直接放行被拒
+  PASS 超规格复检确认被拒
+  PASS 仍为pending_retest
+  PASS 复检确认转reserved
+== TC6 放行原子性：分罐扣量+占用管线泊位，任一失效全部不生效 ==
+  PASS 放行复检超规格整体拒
+  PASS 管线仍空闲
+  PASS 放行成功
+  PASS TK-09扣至5000
+  PASS TK-10扣至5000
+  PASS 管线FL-V01占用
+  PASS 放行快照含分罐前后量
+  PASS 快照含混合实样复检与泊位窗口
+  PASS 重试放行被拒且不重复扣量
+== TC7 管线占用使另一单放行整体失效 ==
+  PASS 管线忙时放行被拒
+  PASS TK-06未扣量
+  PASS 完工释放管线
+  PASS 管线空闲后放行成功
+  PASS TK-06扣至7142.857
+  PASS TK-08扣至2857.143
+  PASS 放行后预留清零
+== TC8 撤销释放预留，重试不重复 ==
+  PASS BP-0003预留成功
+  PASS 撤销成功
+  PASS 撤销后预留清零
+  PASS 重复撤销被拒不重复释放
+  PASS 已放行不可撤销
+== TC9 并发抢量：整单预留成功或失败 ==
+  PASS 并发预留恰一单成功
+  PASS 预留总量恰为15000
+  PASS 胜单撤销释放
+  PASS 释放后另一单可预留
+== TC10 放行与撤销并发只执行一方 ==
+  PASS 放行/撤销恰一方成功
+  PASS 终态一致
+  PASS 撤销后放行无效
+== TC11 泊位窗口重叠拦截（含V3调拨交叉） ==
+  PASS 与在持配油窗口重叠被拒
+  PASS V3窗口与配油预留重叠被拒
+== TC12 配油引用油样冻结复检 ==
+  PASS 被引用油样复检冻结
+== TC13 列表与详情查看（观察员只读） ==
+  PASS 观察员可查看列表
+  PASS 详情含候选与判定依据
+  PASS 详情含放行快照
+== TC14 普通调拨放行时也扣除在持预留 ==
+  PASS 预留前大额申请成功
+  PASS MGO配油预留成功
+  PASS 放行期核量扣除预留给拒
+  PASS 撤销配油释放MGO预留
+  PASS 撤销后调拨放行成功
+== TC15 储罐暂停拦截配油预留与放行 ==
+  PASS 罐暂停拦截预留
+  PASS 恢复后预留成功
+  PASS 罐暂停拦截放行且全部不生效
+  PASS 暂停中预留仍在持
+  PASS 恢复后撤销释放预留
+
+RESULT: 71 passed, 0 failed
+=== REGRESSION ===
+  PASS 普通调拨申请
+  PASS 清线计划
+  PASS 主管许可
+  PASS 窗口登记
+  PASS 窗口确认(无配油冲突)
+  PASS 调拨放行
+  PASS 扣量2000
+  PASS 重复放行拒绝
+  PASS 对账登记
+  PASS 容差内结案并释放资源
+  PASS 管线已释放
+  PASS 收油计划
+  PASS 化验核对
+  PASS 主管入罐
+  PASS 异常样复检
+
+REGRESSION RESULT: 15 passed, 0 failed

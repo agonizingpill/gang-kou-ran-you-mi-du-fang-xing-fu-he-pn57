@@ -27,6 +27,8 @@ from .receipt_routes import router as receipt_router
 app.include_router(receipt_router)
 from .harbor_routes import router as harbor_router
 app.include_router(harbor_router)
+from .blend_routes import router as blend_router
+app.include_router(blend_router)
 @app.exception_handler(IntegrityError)
 async def duplicate(request,e):return JSONResponse({'detail':'编号已存在或关联记录不合法'},status_code=409)
 @app.get('/health')
@@ -41,7 +43,9 @@ def login(d:Login):
         return {'token':token_for(u),'role':u.role,'email':u.email}
 @app.get('/tanks')
 def tanks(u=Depends(current)):
-    with Session() as s:return [obj(x)for x in s.scalars(select(Tank).order_by(Tank.id))]
+    with Session() as s:
+        from .blend_service import reserved_liters
+        return [{**obj(x),'reserved_liters':float(reserved_liters(s,x.id))}for x in s.scalars(select(Tank).order_by(Tank.id))]
 @app.post('/tanks')
 def add_tank(d:TankIn,u=Depends(current)):
     allow(u,'admin')

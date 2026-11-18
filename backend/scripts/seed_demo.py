@@ -4,6 +4,7 @@ from src.database import Base,engine,Session
 from src.models import User,Tank,FuelSample,Transfer
 from src.receipt_models import TankCapacity,TankReceipt,LoadingReconciliation
 from src.harbor_models import FuelLine,LinePermit,Berth,VesselWindow,RetainedSample,RetestOrder
+from src.blend_models import BlendPlan,BlendCandidate,BlendComponent
 from src.security import password_hash
 
 def seed():
@@ -31,5 +32,5 @@ def seed():
                 s.add(TankCapacity(tank_id=tank.id,capacity_liters=cap,density_15=density,baseline_note='演示初始计量基准，按储罐台账与等级密度建立'))
         if not s.scalar(select(TankReceipt.id).where(TankReceipt.code=='RC-DEMO-17')):
             s.add(TankReceipt(tank_id=tanks['TK-06'].id,code='RC-DEMO-17',grade='VLSFO',liters=5000,density_15=985,viscosity=130,sulfur=.35,state='planned'))
-    with Session() as s:print(json.dumps({k:s.scalar(select(func.count()).select_from(v))for k,v in [('users',User),('tanks',Tank),('samples',FuelSample),('transfers',Transfer),('tank_capacities',TankCapacity),('receipts',TankReceipt),('reconciliations',LoadingReconciliation),('fuel_lines',FuelLine),('line_permits',LinePermit),('berths',Berth),('vessel_windows',VesselWindow),('retained_samples',RetainedSample),('retest_orders',RetestOrder)]}))
+    with Session() as s:print(json.dumps({k:s.scalar(select(func.count()).select_from(v))for k,v in [('users',User),('tanks',Tank),('samples',FuelSample),('transfers',Transfer),('tank_capacities',TankCapacity),('receipts',TankReceipt),('reconciliations',LoadingReconciliation),('fuel_lines',FuelLine),('line_permits',LinePermit),('berths',Berth),('vessel_windows',VesselWindow),('retained_samples',RetainedSample),('retest_orders',RetestOrder),('blend_plans',BlendPlan),('blend_candidates',BlendCandidate),('blend_components',BlendComponent)]}))
 if __name__=='__main__':seed()

@@ -9,3 +9,5 @@ LINE_STATES=('idle','busy')
 PERMIT_STATES=('planned','permitted','in_use','completed')
 WINDOW_STATES=('planned','confirmed','in_use','completed')
 RETEST_STATES=('commissioned','reported','closed')
+
+BLEND_STATES=('candidates','reserved','pending_retest','released','completed','cancelled')
